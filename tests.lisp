@@ -3,6 +3,8 @@
 
 (in-package :name.hijarian.point-of-sale)
 
+;-CODE------------------------------------------------------------------------------
+
 (defparameter *emitted-string* nil)
 
 (defparameter *prices-source* (make-hash-table :test #'equal))
@@ -26,6 +28,8 @@
   "Pretty macro to associate a price with a given barcode. is-keyword and in-keyword are a syntax sugar."
   `(setf (gethash ,barcode *prices-source*) ,price))
 
+;-TESTS------------------------------------------------------------------------------
+
 (defsuite all-tests)
 (in-suite all-tests)
 
@@ -45,4 +49,3 @@
 (deftest different-barcode-different-price ()
   (check-point-of-sale-output "666777" "$23.13"
     (cost-of "666777" is "$23.13" in point-of-sale)))
-
