@@ -29,20 +29,20 @@
 (defsuite all-tests)
 (in-suite all-tests)
 
+(defmacro check-point-of-sale-output (barcode price &body body)
+  `(let ((point-of-sale (make-point-of-sale)))
+     ,@body
+     (on-barcode point-of-sale ,barcode)
+     (is (equal (emitted-string) ,price))))
+
 (deftest empty-string-is-invalid ()
-  (let ((point-of-sale (make-point-of-sale)))
-    (on-barcode point-of-sale "") 
-    (is (equal (emitted-string) "Invalid barcode!"))))
+  (check-point-of-sale-output "" "Invalid barcode!"))
 
 (deftest need-proper-barcode-and-item-price-to-emit-price ()
-  (let ((point-of-sale (make-point-of-sale)))
-    (cost-of "123456" is "$10.35" in point-of-sale)
-    (on-barcode point-of-sale "123456")
-    (is (equal (emitted-string) "$10.35"))))
+  (check-point-of-sale-output "123456" "$10.35"
+    (cost-of "123456" is "$10.35" in point-of-sale)))
 
 (deftest different-barcode-different-price ()
-  (let ((point-of-sale (make-point-of-sale)))
-    (cost-of "666777" is "$23.13" in point-of-sale)
-    (on-barcode point-of-sale "666777")
-    (is (equal (emitted-string) "$23.13"))))
+  (check-point-of-sale-output "666777" "$23.13"
+    (cost-of "666777" is "$23.13" in point-of-sale)))
 
