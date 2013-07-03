@@ -13,13 +13,19 @@
   "Checks what string was emitted to external display"
   *emitted-string*)
 
+(defun ask-for-price (point-of-sale barcode)
+  (gethash barcode *prices-source*))
+
+(defun emit-string (point-of-sale string) 
+  (setf *emitted-string* string))
+
 (defun on-barcode (point-of-sale barcode)
   "Event handler which handles on the occasion of the barcode being sent to the point of sale"
-  (let ((price (gethash barcode *prices-source*)))
-    (setf *emitted-string*
-          (if (null price)
-              (format nil "No price for barcode: '~a'" barcode)
-              price))))
+  (let ((price (ask-for-price point-of-sale barcode)))
+    (emit-string point-of-sale
+     (if (null price)
+         (format nil "No price for barcode: '~a'" barcode)
+         price))))
 
 (defun make-point-of-sale ()
   "Factory function to properly create a point of sale"
