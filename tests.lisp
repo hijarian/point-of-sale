@@ -58,3 +58,10 @@
 (deftest no-price-defined-emit-no-price-message ()
   (check-point-of-sale-output "666777" "No price for barcode: '666777'"))
     
+(deftest emits-correct-prices-when-several-defined ()
+  (check-point-of-sale-output "333333" "$30.03"
+    (cost-of "111111" is "$10.01" in point-of-sale)
+    (cost-of "222222" is "$20.02" in point-of-sale)
+    (cost-of "333333" is "$30.03" in point-of-sale)
+    (cost-of "444444" is "$40.04" in point-of-sale)))
+    
