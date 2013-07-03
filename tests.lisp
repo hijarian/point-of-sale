@@ -1,37 +1,19 @@
-(defpackage :name.hijarian.point-of-sale
-  (:use :common-lisp :stefil))
+; Tests for the Point of Sale exercise
+;
+; Note that they use some inner knowledge of the code.lisp
+; `cost-of` and `emitted-string` are missing parts of the UI of prices source and string emitter, really,
+; but in our case they are just a helpers for tests, so until we need the real objects representing
+; this concepts, this two functions will better not pollute the code.lisp
 
 (in-package :name.hijarian.point-of-sale)
-
-;-CODE------------------------------------------------------------------------------
-
-(defparameter *emitted-string* nil)
-
-(defparameter *prices-source* (make-hash-table :test #'equal))
-
-(defun emitted-string ()
-  "Checks what string was emitted to external display"
-  *emitted-string*)
-
-(defun ask-for-price (barcode)
-  (gethash barcode *prices-source*))
-
-(defun emit-string (string) 
-  (setf *emitted-string* string))
-
-(defun on-barcode (barcode)
-  "Event handler which handles on the occasion of the barcode being sent to the point of sale"
-  (let ((price (ask-for-price barcode)))
-    (emit-string 
-     (if (null price)
-         (format nil "No price for barcode: '~a'" barcode)
-         price))))
 
 (defmacro cost-of (barcode is-keyword price)
   "Pretty macro to associate a price with a given barcode. is-keyword is a syntax sugar."
   `(setf (gethash ,barcode *prices-source*) ,price))
 
-;-TESTS------------------------------------------------------------------------------
+(defun emitted-string ()
+  "Checks what string was emitted to external display"
+  *emitted-string*)
 
 (defsuite all-tests)
 (in-suite all-tests)
@@ -39,9 +21,12 @@
 (defixture clear-prices
   (:setup (clrhash *prices-source*)))
 
-(defmacro check-point-of-sale-output (barcode price &body body)
+(defmacro check-point-of-sale-output (barcode price &body setup)
+  "This is the encapsulation of a routine: clear prices possibly defined in previous test, 
+call whatever specific setup is needed for this test, trigger the event under test 
+and check the string emitted by point of sale"
   `(with-fixture clear-prices
-     ,@body
+     ,@setup
      (on-barcode ,barcode)
      (is (equal (emitted-string) ,price))))
 
