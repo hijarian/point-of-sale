@@ -5,6 +5,8 @@
 
 (defparameter *emitted-string* nil)
 
+(defparameter *prices-source* (make-hash-table :test #'equal))
+
 (defun emitted-string ()
   "Checks what string was emitted to external display"
   (if (null *emitted-string*)
@@ -13,11 +15,8 @@
 
 (defun on-barcode (point-of-sale barcode)
   "Event handler which handles on the occasion of the barcode being sent to the point of sale"
-  (if (equal barcode "123456")
-      (progn
-        (setf *emitted-string* "$10.35")
-        "$10.35")
-      nil))
+  (let ((price (gethash barcode *prices-source*)))
+    (setf *emitted-string* price)))
 
 (defun make-point-of-sale ()
   "Factory function to properly create a point of sale"
@@ -25,7 +24,7 @@
 
 (defmacro cost-of (barcode is-keyword price in-keyword point-of-sale)
   "Pretty macro to associate a price with a given barcode. is-keyword and in-keyword are a syntax sugar."
-  t)
+  `(setf (gethash ,barcode *prices-source*) ,price))
 
 (defsuite all-tests)
 (in-suite all-tests)
@@ -40,4 +39,10 @@
     (cost-of "123456" is "$10.35" in point-of-sale)
     (on-barcode point-of-sale "123456")
     (is (equal (emitted-string) "$10.35"))))
+
+(deftest different-barcode-different-price ()
+  (let ((point-of-sale (make-point-of-sale)))
+    (cost-of "666777" is "$23.13" in point-of-sale)
+    (on-barcode point-of-sale "666777")
+    (is (equal (emitted-string) "$23.13"))))
 
