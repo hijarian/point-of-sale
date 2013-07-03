@@ -11,14 +11,15 @@
 
 (defun emitted-string ()
   "Checks what string was emitted to external display"
-  (if (null *emitted-string*)
-      "Invalid barcode!"
-      *emitted-string*))
+  *emitted-string*)
 
 (defun on-barcode (point-of-sale barcode)
   "Event handler which handles on the occasion of the barcode being sent to the point of sale"
   (let ((price (gethash barcode *prices-source*)))
-    (setf *emitted-string* price)))
+    (setf *emitted-string*
+          (if (null price)
+              (format nil "No price for barcode: '~a'" barcode)
+              price))))
 
 (defun make-point-of-sale ()
   "Factory function to properly create a point of sale"
@@ -33,14 +34,18 @@
 (defsuite all-tests)
 (in-suite all-tests)
 
+(defixture clear-prices
+  (:setup (clrhash *prices-source*)))
+
 (defmacro check-point-of-sale-output (barcode price &body body)
-  `(let ((point-of-sale (make-point-of-sale)))
-     ,@body
-     (on-barcode point-of-sale ,barcode)
-     (is (equal (emitted-string) ,price))))
+  `(with-fixture clear-prices
+     (let ((point-of-sale (make-point-of-sale)))
+       ,@body
+       (on-barcode point-of-sale ,barcode)
+       (is (equal (emitted-string) ,price)))))
 
 (deftest empty-string-is-invalid ()
-  (check-point-of-sale-output "" "Invalid barcode!"))
+  (check-point-of-sale-output "" "No price for barcode: ''"))
 
 (deftest need-proper-barcode-and-item-price-to-emit-price ()
   (check-point-of-sale-output "123456" "$10.35"
@@ -49,3 +54,7 @@
 (deftest different-barcode-different-price ()
   (check-point-of-sale-output "666777" "$23.13"
     (cost-of "666777" is "$23.13" in point-of-sale)))
+
+(deftest no-price-defined-emit-no-price-message ()
+  (check-point-of-sale-output "666777" "No price for barcode: '666777'"))
+    
